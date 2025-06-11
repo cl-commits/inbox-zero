@@ -1,19 +1,21 @@
+#
+# Corrected and Validated Render Blueprint for Inbox Zero
+#
+
 # Defines the managed databases for the application
 databases:
   - name: inbox-zero-db
-    plan: free # 'free' plan is fine for starting out
-    databaseName: inbox_zero_db # Optional: defines the initial database name inside Postgres
-    user: inbox_zero_user # Optional: defines the user
+    plan: free
+    databaseName: inbox_zero_db
+    user: inbox_zero_user
 
 # Defines the services (web app, redis, cron jobs)
 services:
-  # -----------------
   # The main web application (Next.js)
-  # -----------------
   - type: web
     name: inbox-zero
     env: node
-    plan: starter # Use starter or higher; free plan may time out during build.
+    plan: starter
     buildCommand: |
       pnpm install
       pnpm turbo run build --filter=web
@@ -31,13 +33,12 @@ services:
           name: inbox-zero-redis
           property: internalUrl
       - key: UPSTASH_REDIS_TOKEN
-        value: from-render-url # The redis client parses the password from the URL
+        value: from-render-url
       - key: NEXTAUTH_URL
         value: https://inbox-zero.onrender.com # IMPORTANT: Change this if you rename the service
       - key: NEXT_PUBLIC_APP_URL
         value: https://inbox-zero.onrender.com # IMPORTANT: Change this if you rename the service
-      # --- Secrets ---
-      # You will be prompted to enter these values during blueprint setup.
+      # --- Secrets (you will fill these in on the Render dashboard) ---
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -52,34 +53,30 @@ services:
         sync: false
       - key: GOOGLE_PUBSUB_VERIFICATION_TOKEN
         sync: false
-      - key: OPENAI_API_KEY # or your preferred LLM provider key
+      - key: OPENAI_API_KEY
         sync: false
       - key: DEFAULT_LLM_PROVIDER
-        value: openai # or anthropic, groq, etc.
+        value: openai
       - key: ADMINS
         sync: false
 
-  # -----------------
   # The Redis Instance
-  # -----------------
   - type: redis
     name: inbox-zero-redis
-    plan: free # 'free' plan is fine for starting out
+    plan: free
 
-  # -----------------
   # The Cron Jobs
-  # -----------------
   - type: cron
     name: inbox-zero-watch-all
-    schedule: "0 1 * * *" # At 01:00 AM UTC daily
+    schedule: "0 1 * * *"
     command: curl https://inbox-zero.onrender.com/api/google/watch/all
 
   - type: cron
     name: inbox-zero-summary
-    schedule: "0 16 * * 1" # At 04:00 PM UTC every Monday
+    schedule: "0 16 * * 1"
     command: curl https://inbox-zero.onrender.com/api/resend/summary/all
 
   - type: cron
     name: inbox-zero-disable-drafts
-    schedule: "0 3 * * *" # At 03:00 AM UTC daily
+    schedule: "0 3 * * *"
     command: curl https://inbox-zero.onrender.com/api/reply-tracker/disable-unused-auto-draft
